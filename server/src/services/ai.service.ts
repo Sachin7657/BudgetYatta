@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 import { CreateTripInput } from '../schemas/trip.schema.js';
 import { aiItinerarySchema, AiItinerary } from '../schemas/ai.schema.js';
 import { calculateTripBudget } from './budget.js';
@@ -102,7 +102,8 @@ export async function generateItinerary(input: CreateTripInput): Promise<Generat
   }
 
   const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-  const openai = new OpenAI({
+  const OpenAIClient: any = typeof OpenAI === 'function' ? OpenAI : (OpenAI as any).default || OpenAI;
+  const openai = new OpenAIClient({
     apiKey: apiKey.trim(),
     timeout: 30_000,
     maxRetries: 2,
