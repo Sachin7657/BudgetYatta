@@ -8,13 +8,18 @@ import { getDbConnectionStatus } from './config/database.js';
 
 dotenv.config();
 
-// Custom DNS servers to prevent querySrv ECONNREFUSED on Windows
-dns.setServers(['1.1.1.1', '1.0.0.1']);
+// Custom DNS servers to prevent querySrv ECONNREFUSED on Windows local dev
+try {
+  dns.setServers(['1.1.1.1', '1.0.0.1']);
+} catch {
+  // Ignore DNS setServers errors on serverless platforms (e.g. Vercel)
+}
 
 const app = express();
 
+const helmetFn = typeof helmet === 'function' ? helmet : ((helmet as any).default || helmet);
 app.use(
-  helmet({
+  helmetFn({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   })
@@ -29,14 +34,13 @@ const allowedOrigins = [
 ];
 
 if (process.env.CLIENT_URL) {
-  // Add production client origin
   allowedOrigins.push(process.env.CLIENT_URL.trim());
 }
 
+const corsFn = typeof cors === 'function' ? cors : ((cors as any).default || cors);
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+  corsFn({
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
         return callback(null, true);
