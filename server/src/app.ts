@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import dns from 'node:dns/promises';
 import tripRoutes from './routes/trip.routes.js';
-import { getDbConnectionStatus } from './config/database.js';
+import { connectToDatabase, getDbConnectionStatus } from './config/database.js';
 
 dotenv.config();
 
@@ -55,7 +55,12 @@ app.use(
 app.use(express.json({ limit: '1mb' }));
 
 // Health check endpoint
-app.get('/api/health', (_req: Request, res: Response) => {
+app.get('/api/health', async (_req: Request, res: Response) => {
+  try {
+    await connectToDatabase();
+  } catch {
+    // If DB fails to connect, getDbConnectionStatus will return disconnected
+  }
   const dbStatus = getDbConnectionStatus();
   res.status(200).json({
     success: true,
